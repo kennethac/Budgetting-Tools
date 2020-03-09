@@ -7,16 +7,23 @@ from os import path
 from typing import List, Dict
 import xlrd
 
+
+def smartstrip(s):
+    if type(s) == str:
+        return s.strip()
+    else:
+        return s
+
 class TransactionInfo:
     def __init__(self, amount, account, date, payee, memo, id, outlay=True, cat=None):
         self.amount = amount
-        self.account = account
-        self.date = date
-        self.payee = payee
-        self.memo = memo
-        self.id = id if id is not None else "{}|{}|{}".format(date, account, amount)
-        self.outlay = outlay
-        self.cat = cat
+        self.account = smartstrip(account)
+        self.date = smartstrip(date)
+        self.payee = smartstrip(payee)
+        self.memo = smartstrip(memo)
+        self.id = smartstrip(id) if id is not None else "{}|{}|{}".format(date, account, amount).strip()
+        self.outlay = smartstrip(outlay)
+        self.cat = smartstrip(cat)
 
     def __repr__(self):
         # return "{},{},{},{},{},{},{}".format(self.id, self.account, self.date, self.payee, self.amount, self.memo, self.outlay)
@@ -29,7 +36,6 @@ class TransactionInfo:
         return f"{self.account}, {self.formatted_date()}, {self.id}, {self.payee}, {self.amount}"
 
     def parsedDate(self) -> datetime:
-        print(self.date)
         if type(self.date) == str:
             return parse(self.date)
         elif type(self.date) == datetime.datetime:
@@ -51,6 +57,13 @@ def zions_credit_select(row:List[object]):
     else:
         return TransactionInfo(float(row[4]), "Zions Credit", row[0], row[3], None, row[2])
 
+def zions_checking_select(row:List[object]):
+    # print(row)
+    if float(row[5]) < 0: # is outlay
+        return TransactionInfo(-float(row[5]), "Zions Checking", row[1], row[4], None, row[2])
+    else:
+        return TransactionInfo(float(row[5]), "Zions Checking", row[1], row[4], None, row[2], outlay=False)
+
 def usaa_credit_select(row:List[object]):
     amt = float(row[6])
     if amt < 0:
@@ -59,11 +72,14 @@ def usaa_credit_select(row:List[object]):
         return TransactionInfo(amt, "USAA Credit", row[2], row[4], None, None, outlay=False)
 
 def usaa_checking_select(row:List[object]):
+    print(row)
     amt = float(row[6])
     if amt < 0:
-        return TransactionInfo(-amt, "USAA Checking", row[2], row[4], None, None)
+        t = TransactionInfo(-amt, "USAA Checking", row[2], row[4], None, None)
     else:
-        return TransactionInfo(amt, "USAA Checking", row[2], row[4], None, None, outlay=False)
+        t = TransactionInfo(amt, "USAA Checking", row[2], row[4], None, None, outlay=False)
+    print(t)
+    return t
 
 def budget_filter(rows:List[List[object]]):
     return list(rows)[1:]
@@ -107,9 +123,9 @@ def import_dir(dir_name:str) -> List[TransactionInfo]:
     if dir_name == "Zions_Credit":
         r_filter = zions_credit_filter
         r_select = zions_credit_select
-    # elif dir_name == "Zions_Checking":
-    #     r_filter = zions_checking_filter
-    #     r_select = zions_checking_select
+    elif dir_name == "Zions_Checking":
+        r_filter = filter_noop
+        r_select = zions_checking_select
     elif dir_name == "USAA_Credit":
         r_filter = filter_noop
         r_select = usaa_credit_select
@@ -130,6 +146,7 @@ def listify(item):
         return [item]
 
 def import_file(file_name:str, r_filter, r_select, sheet_name=None) -> List[TransactionInfo]:
+    print(f"{file_name}")
     file_res = read_spreadsheet(file_name, sheet_name=sheet_name) if "xls" in file_name else read_csv(file_name)
     results = [r_select(row) for row in r_filter(file_res)]
     return [ tran for res in results for tran in listify(res) ]
@@ -198,11 +215,10 @@ if __name__ == "__main__":
     g = combine_all(g)
 
     new_years = parse("1/1/2020")
-    g = filter(lambda t: t.parsedDate() >= new_years, g)
+    g = list(filter(lambda t: t.parsedDate() >= new_years, g))
     outlays, inlays, transfer_pairs = separate(g)
-    print(outlays)
+
     # o = "\n".join([str(l) for s in g for l in s])
-    print(g)
     o = "\n".join([str(s) for s in g])
     with open("/tmp/g.csv", "w") as f:
         f.write(o)
