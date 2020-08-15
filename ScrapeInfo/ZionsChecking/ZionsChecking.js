@@ -18,13 +18,13 @@ async function getCSVForPage(lastPage = false) {
     const descriptions = [...secondTable.querySelectorAll(".table_column_2 .changeText")].map(e => e.innerText.trim().replace(/,/g, ' '));
     const dates = [...secondTable.querySelectorAll(".table_column_0")].map(e => e.innerText.trim());
     const debits = [...secondTable.querySelectorAll(".table_column_4")].map(e => {
-        var match = e.innerText.match(/\d+\.\d\d/);
+        var match = e.innerText.match(/(\d+,)?\d+\.\d\d/);
         if (match == null) return "";
         return match[0].trim();
     });
 
     const credits = [...secondTable.querySelectorAll(".table_column_5")].map(e => {
-        var match = e.innerText.match(/\d+\.\d\d/);
+        var match = e.innerText.match(/(\d+,)?\d+\.\d\d/);
         if (match == null) return "";
         return match[0].trim();
     });
