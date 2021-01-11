@@ -19,7 +19,7 @@ def combine_all(transactions:List[List[TransactionInfo]]):
     return list(combined.values())
 
 def fuzzy_match(first:datetime.datetime, second:datetime.datetime):
-    threshold = datetime.timedelta(days=3)
+    threshold = datetime.timedelta(days=4)
     return abs(first - second) < threshold
 
 def separate(trans:List[TransactionInfo]):
@@ -57,7 +57,7 @@ if __name__ == "__main__":
     g = import_all(list(filter(lambda d: not d.startswith(".") , os.listdir())))
 
     # Read in budget one.
-    budget_file = "/Users/kenneth/Documents/OneDrive - BYU Office 365/Google Drive/Finances/Budget/2020/BudgetPlanningV3.xlsx"
+    budget_file = "/Users/kenneth/Documents/OneDrive/Documents/Finances/Budget/2021/BudgetPlanningV0.xlsx"
     outlay_trans = import_file(budget_file, budget_filter, transaction_select(True), sheet_name="Outlays")
     inlay_trans = import_file(budget_file, budget_filter, transaction_select(False), sheet_name="Inlays")
     transfer_trans = import_file(budget_file, budget_filter, transfer_select, sheet_name="Transfers")
